@@ -1,6 +1,7 @@
 import { baseContainerVariables, cssVariablesObjectToString, } from "./cssVariables";
 import { ladderOrder, mergeResponsiveLength, mergeSizeDef, resolveAtBreakpoint, sizeNames, widthVarName, } from "./resolve";
 import { toSizeCss } from "./sizesCss";
+import { toThemeCss } from "./themeTokens";
 const formatRule = (selector, decls) => {
     if (!Object.keys(decls).length)
         return "";
@@ -26,7 +27,7 @@ const rootDeclsAtBreakpoint = (config, bp) => {
  * `base`, later breakpoints re-assert the merged (inherited) value on the
  * same specificity tier so global xl/2xl steps are not frozen.
  */
-export const toCss = (config) => {
+export const toCss = (config, options = {}) => {
     const selectorList = config.selectors.join(",\n");
     const chunks = [];
     const mediaKeys = config.breakpointOrder;
@@ -110,6 +111,9 @@ export const toCss = (config) => {
         }
     }
     chunks.push(toSizeCss(config).trimEnd());
+    if (options.theme) {
+        chunks.push(toThemeCss(config).trimEnd());
+    }
     return chunks.filter(Boolean).join("\n\n") + "\n";
 };
 export const toCssVariables = (config) => baseContainerVariables(config);

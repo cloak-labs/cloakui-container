@@ -13,7 +13,6 @@
 @container (min-width: 0px) {
   * {
     --cntr-vw: 100cqi;
-    --100vw: var(--cntr-vw);
   }
 }
 
@@ -23,5 +22,4 @@
 */
 .cntr-cq {
   --cntr-vw: 100cqi;
-  --100vw: var(--cntr-vw);
 }

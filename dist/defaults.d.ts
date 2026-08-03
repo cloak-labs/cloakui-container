@@ -1,5 +1,5 @@
 import type { ResolvedContainerConfig } from "./types";
-/** Defaults matching a typical content + wide layout (WP-friendly preset). */
+/** Package defaults: a single content measure. Add more sizes in your project config. */
 export declare const defaultContainerConfig: ResolvedContainerConfig;
 /** Align / semantic size → class (custom sizes use `cntr-{name}`). */
 export declare const builtinClassMap: {

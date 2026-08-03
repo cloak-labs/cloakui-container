@@ -1,19 +1,12 @@
 import type { ResolvedContainerConfig } from "./types";
 
-/** Defaults matching a typical content + wide layout (WP-friendly preset). */
+/** Package defaults: a single content measure. Add more sizes in your project config. */
 export const defaultContainerConfig: ResolvedContainerConfig = {
   sizes: {
     default: {
       width: {
         base: "56rem", // max-w-4xl
         "2xl": "64rem", // max-w-5xl
-      },
-    },
-    wide: {
-      width: {
-        base: "72rem", // max-w-6xl
-        xl: "76rem",
-        "2xl": "86rem",
       },
     },
   },
@@ -34,9 +27,8 @@ export const defaultContainerConfig: ResolvedContainerConfig = {
     lg: "1024px",
     xl: "1280px",
     "2xl": "1536px",
-    "3xl": "1925px",
   },
-  breakpointOrder: ["sm", "md", "lg", "xl", "2xl", "3xl"],
+  breakpointOrder: ["sm", "md", "lg", "xl", "2xl"],
   selectors: [":root", "#root"],
 };
 

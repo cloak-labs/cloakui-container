@@ -1,21 +1,28 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import { breakpointsFromScreens } from "./breakpointsFromScreens";
 import { defineContainer } from "./defineContainer";
 
 describe("defineContainer", () => {
-  it("resolves default widths matching legacy agency defaults", () => {
+  it("supplies only a default size preset when sizes are omitted", () => {
     const container = defineContainer();
     assert.equal(container.width("default"), "56rem");
     assert.equal(container.width("default", "2xl"), "64rem");
-    assert.equal(container.width("wide"), "72rem");
-    assert.equal(container.width("wide", "xl"), "76rem");
-    assert.equal(container.width("wide", "2xl"), "86rem");
     assert.equal(container.width("full"), "100vw");
+    assert.ok(!container.config.sizes.wide);
+    assert.ok(!container.cssVariables["--cntr-width-wide"]);
   });
 
   it("maps sizes to cntr class names", () => {
-    const container = defineContainer();
+    const container = defineContainer({
+      sizes: {
+        default: { base: "56rem" },
+        wide: { base: "72rem" },
+      },
+    });
     assert.equal(container.className("default"), "cntr");
     assert.equal(container.className("wide"), "cntr-wide");
     assert.equal(container.className("full"), "cntr-full");
@@ -43,11 +50,7 @@ describe("defineContainer", () => {
   });
 
   it("omits wide tokens when wide is not configured", () => {
-    const container = defineContainer({
-      sizes: {
-        default: { base: "56rem", "2xl": "64rem" },
-      },
-    });
+    const container = defineContainer();
     const css = container.toCss();
     assert.doesNotMatch(css, /--cntr-width-wide/);
     assert.doesNotMatch(css, /\.cntr-wide/);
@@ -123,7 +126,6 @@ describe("defineContainer", () => {
     const vars = defineContainer().cssVariables;
     assert.equal(vars["--cntr-vw"], "100%");
     assert.equal(vars["--scrollbar-w"], "0px");
-    assert.equal(vars["--100vw"], "var(--cntr-vw)");
   });
 
   it("enables scrollbar compensation when requested", () => {
@@ -135,14 +137,24 @@ describe("defineContainer", () => {
   });
 
   it("builds content-box width with --cntr-vw semantics", () => {
-    const off = defineContainer();
+    const withWide = {
+      sizes: {
+        default: { base: "56rem" },
+        wide: { base: "72rem", xl: "76rem" },
+      },
+    } as const;
+
+    const off = defineContainer(withWide);
     assert.equal(
       off.contentBoxWidth("wide", "xl"),
       "calc(min(76rem, 100%) - calc(1.5rem * 2))",
     );
     assert.equal(off.contentBoxWidth("full"), "100%");
 
-    const on = defineContainer({ scrollbarCompensation: true });
+    const on = defineContainer({
+      ...withWide,
+      scrollbarCompensation: true,
+    });
     assert.equal(
       on.contentBoxWidth("wide", "xl"),
       "calc(min(76rem, 100vw) - calc(1.5rem * 2))",
@@ -151,14 +163,17 @@ describe("defineContainer", () => {
   });
 
   it("emits derived gutter CSS variables", () => {
-    const vars = defineContainer().cssVariables;
+    const vars = defineContainer({
+      sizes: {
+        default: { base: "56rem" },
+        wide: { base: "72rem" },
+      },
+    }).cssVariables;
     assert.equal(vars["--cntr-width"], "56rem");
     assert.equal(vars["--cntr-width-wide"], "72rem");
     assert.equal(vars["--cntr-padding"], "1rem");
     assert.ok(vars["--cntr-gutter"]);
     assert.ok(vars["--cntr-gutter-wide"]);
-    assert.equal(vars["--cntr-wide-gutter"], "var(--cntr-gutter-wide)");
-    assert.ok(vars["--100vw"]);
   });
 
   it("uses startEndAlignSize for start/end gutters", () => {
@@ -211,7 +226,6 @@ describe("defineContainer", () => {
       "lg",
       "xl",
       "2xl",
-      "3xl",
     ]);
     assert.equal(container.width("wide", "xmd"), "80rem");
     assert.equal(container.width("wide", "md"), "72rem"); // inherit base
@@ -222,22 +236,18 @@ describe("defineContainer", () => {
     );
   });
 
-  it("breakpointsFromScreens preserves Tailwind screen order", () => {
+  it("breakpointsFromScreens preserves screen key order including custom 3xl", () => {
     const synced = breakpointsFromScreens({
-      xs: "475px",
       sm: "640px",
       md: "768px",
-      xmd: "940px",
       lg: "1024px",
       xl: "1280px",
       "2xl": "1536px",
       "3xl": "1925px",
     });
     assert.deepEqual(synced.breakpointOrder, [
-      "xs",
       "sm",
       "md",
-      "xmd",
       "lg",
       "xl",
       "2xl",
@@ -247,13 +257,12 @@ describe("defineContainer", () => {
     const container = defineContainer({
       ...synced,
       sizes: {
-        default: { base: "56rem", xmd: "60rem" },
+        default: { base: "56rem", "3xl": "70rem" },
       },
     });
-    assert.equal(container.config.breakpoints.xmd, "940px");
-    assert.equal(container.width("default", "xmd"), "60rem");
-    assert.ok(container.config.breakpointOrder.indexOf("xmd") > container.config.breakpointOrder.indexOf("md"));
-    assert.ok(container.config.breakpointOrder.indexOf("xmd") < container.config.breakpointOrder.indexOf("lg"));
+    assert.equal(container.config.breakpoints["3xl"], "1925px");
+    assert.equal(container.width("default", "3xl"), "70rem");
+    assert.ok(container.config.breakpointOrder.includes("3xl"));
   });
 
   it("throws when a size step has no breakpoint", () => {
@@ -261,19 +270,65 @@ describe("defineContainer", () => {
       () =>
         defineContainer({
           sizes: {
-            default: { base: "56rem", xmd: "60rem" },
+            default: { base: "56rem", tablet: "60rem" },
           },
-          // xmd omitted from breakpoints (and not in defaults)
           breakpoints: {
             sm: "640px",
             md: "768px",
             lg: "1024px",
             xl: "1280px",
             "2xl": "1536px",
-            "3xl": "1925px",
           },
         }),
-      /missing breakpoints: xmd/,
+      /missing breakpoints: tablet/,
     );
+  });
+
+  it("emits Tailwind v4 @theme tokens from config sizes", () => {
+    const container = defineContainer({
+      sizes: {
+        default: { base: "56rem" },
+        wide: { base: "72rem" },
+        narrow: { base: "42rem" },
+      },
+    });
+
+    const theme = container.toThemeCss();
+    assert.match(theme, /@theme \{/);
+    assert.match(theme, /--spacing-cntr-pad:\s*var\(--cntr-padding\)/);
+    assert.match(theme, /--spacing-gutter:\s*var\(--cntr-gutter\)/);
+    assert.match(theme, /--spacing-gutter-wide:\s*var\(--cntr-gutter-wide\)/);
+    assert.match(theme, /--spacing-gutter-narrow:\s*var\(--cntr-gutter-narrow\)/);
+    assert.match(theme, /--width-cntr:\s*var\(--cntr-width\)/);
+    assert.match(theme, /--width-cntr-wide:\s*var\(--cntr-width-wide\)/);
+    assert.match(theme, /--max-width-cntr-narrow:\s*var\(--cntr-width-narrow\)/);
+
+    const combined = container.toCss({ theme: true });
+    assert.match(combined, /\.cntr \{/);
+    assert.match(combined, /@theme \{/);
+    assert.match(combined, /--spacing-gutter-wide:/);
+
+    const measureOnly = container.toCss();
+    assert.doesNotMatch(measureOnly, /@theme/);
+  });
+
+  it("writeCss writes combined CSS to disk", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cloakui-container-"));
+    const file = join(dir, "container.generated.css");
+    try {
+      const container = defineContainer({
+        sizes: {
+          default: { base: "56rem" },
+          wide: { base: "72rem" },
+        },
+      });
+      container.writeCss(file, { theme: true });
+      const written = readFileSync(file, "utf8");
+      assert.match(written, /--cntr-width-wide:\s*72rem/);
+      assert.match(written, /@theme \{/);
+      assert.match(written, /--max-width-cntr-wide:/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

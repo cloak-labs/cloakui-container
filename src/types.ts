@@ -65,7 +65,7 @@ export type DefineContainerOptions = {
    * `true` → use `"17px"`; or pass an explicit length string.
    */
   scrollbarCompensation?: boolean | string;
-  /** Sidebar width used when scrollbar compensation is on (WP editor). */
+  /** Sidebar width used when scrollbar compensation is on. */
   sidebarWidth?: string;
   /**
    * Size name whose gutter aligns `cntr-start` / `cntr-end`.

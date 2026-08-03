@@ -1,11 +1,10 @@
-/** Default step keys (excludes `base`) matching common Tailwind screens. */
+/** Default step keys (excludes `base`) matching Tailwind's default screens. */
 export const defaultBreakpointOrder = [
     "sm",
     "md",
     "lg",
     "xl",
     "2xl",
-    "3xl",
 ];
 /**
  * Full ladder including `base` — back-compat export for callers that walked a

@@ -11,7 +11,16 @@ import {
   widthVarName,
 } from "./resolve";
 import { toSizeCss } from "./sizesCss";
+import { toThemeCss } from "./themeTokens";
 import type { ResolvedContainerConfig, ResolvedSizeDef } from "./types";
+
+export type ToCssOptions = {
+  /**
+   * Append a Tailwind v4 `@theme` block for spacing / width / max-width tokens
+   * (`px-cntr-pad`, `max-w-cntr`, …).
+   */
+  theme?: boolean;
+};
 
 const formatRule = (selector: string, decls: Record<string, string>): string => {
   if (!Object.keys(decls).length) return "";
@@ -42,7 +51,10 @@ const rootDeclsAtBreakpoint = (
  * `base`, later breakpoints re-assert the merged (inherited) value on the
  * same specificity tier so global xl/2xl steps are not frozen.
  */
-export const toCss = (config: ResolvedContainerConfig): string => {
+export const toCss = (
+  config: ResolvedContainerConfig,
+  options: ToCssOptions = {},
+): string => {
   const selectorList = config.selectors.join(",\n");
   const chunks: string[] = [];
   const mediaKeys = config.breakpointOrder;
@@ -143,6 +155,10 @@ export const toCss = (config: ResolvedContainerConfig): string => {
   }
 
   chunks.push(toSizeCss(config).trimEnd());
+
+  if (options.theme) {
+    chunks.push(toThemeCss(config).trimEnd());
+  }
 
   return chunks.filter(Boolean).join("\n\n") + "\n";
 };

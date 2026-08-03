@@ -1,28 +1,10 @@
 import plugin from "tailwindcss/plugin";
 import { baseContainerVariables } from "./cssVariables";
-import { ladderOrder, mergeResponsiveLength, mergeSizeDef, nonDefaultSizeNames, resolveAtBreakpoint, resolveContainerConfig, sizeNames, widthVarName, } from "./resolve";
+import { ladderOrder, mergeResponsiveLength, mergeSizeDef, resolveAtBreakpoint, resolveContainerConfig, sizeNames, widthVarName, } from "./resolve";
 import { toSizeCss } from "./sizesCss";
+import { themeTokenMaps } from "./themeTokens";
 function themeExtensions(resolved) {
-    const spacing = {
-        "cntr-pad": "var(--cntr-padding)",
-        gutter: "var(--cntr-gutter)",
-    };
-    const maxWidth = {
-        cntr: "var(--cntr-width)",
-    };
-    const width = {
-        cntr: "var(--cntr-width)",
-    };
-    for (const name of nonDefaultSizeNames(resolved)) {
-        spacing[`gutter-${name}`] = `var(--cntr-gutter-${name})`;
-        maxWidth[`cntr-${name}`] = `var(--cntr-width-${name})`;
-        width[`cntr-${name}`] = `var(--cntr-width-${name})`;
-    }
-    // Legacy alias used by agency kit during migration
-    if (resolved.sizes.wide) {
-        spacing["gutter-wide"] = spacing["gutter-wide"] ?? "var(--cntr-gutter-wide)";
-    }
-    return { spacing, maxWidth, width };
+    return themeTokenMaps(resolved);
 }
 function isResolved(config) {
     const sizes = config.sizes;

@@ -9,8 +9,6 @@ export const baseContainerVariables = (config) => {
         "--cntr-vw": compensation === false
             ? "100%"
             : "calc(100vw - var(--sidebar-w) - var(--scrollbar-w))",
-        // Back-compat alias used by agency CSS during migration
-        "--100vw": "var(--cntr-vw)",
         "--cntr-padding": config.padding.base,
         "--cntr-padding-total": "calc(var(--cntr-padding) * 2)",
     };
@@ -20,7 +18,7 @@ export const baseContainerVariables = (config) => {
         const gVar = gutterVarName(name);
         vars[wVar] = size.width.base;
         vars[gVar] = gutterCalc(wVar);
-        // Ladder intermediates for agency globals.css compatibility
+        // Per-breakpoint ladder values for CSS that references a specific step
         for (const [bp, value] of Object.entries(size.width)) {
             if (bp === "base" || value == null)
                 continue;
@@ -32,11 +30,6 @@ export const baseContainerVariables = (config) => {
             }
         }
     }
-    // Legacy alias: --cntr-wide-gutter → --cntr-gutter-wide
-    if (config.sizes.wide) {
-        vars["--cntr-wide-gutter"] = "var(--cntr-gutter-wide)";
-        vars["--cntr-width-wide"] = vars["--cntr-width-wide"] ?? config.sizes.wide.width.base;
-    }
     for (const [bp, value] of Object.entries(config.padding)) {
         if (bp === "base" || value == null)
             continue;
@@ -45,8 +38,6 @@ export const baseContainerVariables = (config) => {
     const startGutter = gutterVarName(config.startEndAlignSize);
     vars["--cntr-start-gutter"] = `var(${startGutter})`;
     vars["--cntr-end-gutter"] = `var(${startGutter})`;
-    // Back-compat
-    vars["--cntr-start-right-margin"] = "var(--cntr-start-gutter)";
     return vars;
 };
 export const cssVariablesObjectToString = (vars) => Object.entries(vars)

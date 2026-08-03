@@ -6,8 +6,10 @@ import {
   resolveAtBreakpoint,
   resolveContainerConfig,
 } from "./resolve";
-import { toCss, toCssVariables } from "./toCss";
+import { toCss, toCssVariables, type ToCssOptions } from "./toCss";
+import { toThemeCss } from "./themeTokens";
 import { createContainerTailwindPlugin } from "./tailwindPlugin";
+import { writeContainerCss } from "./writeContainerCss";
 import type {
   ContainerBreakpoint,
   ContainerSizeName,
@@ -28,7 +30,14 @@ export type ContainerInstance = {
     breakpoint?: ContainerBreakpoint,
   ) => string;
   cssVariables: Record<string, string>;
-  toCss: () => string;
+  /** Measure CSS. Pass `{ theme: true }` to also emit a Tailwind v4 `@theme` block. */
+  toCss: (options?: ToCssOptions) => string;
+  /** Tailwind v4 `@theme` tokens only (`px-cntr-pad`, `max-w-cntr`, …). */
+  toThemeCss: () => string;
+  /**
+   * Write `toCss()` output to a file (Node prebuild). Same options as `toCss`.
+   */
+  writeCss: (filePath: string, options?: ToCssOptions) => void;
   tailwindPlugin: () => ReturnType<typeof createContainerTailwindPlugin>;
 };
 
@@ -38,7 +47,7 @@ export type ContainerInstance = {
  * reads (e.g. responsive image `sizes`).
  */
 export const defineContainer = (
-  options: DefineContainerOptions = {}
+  options: DefineContainerOptions = {},
 ): ContainerInstance => {
   const config = resolveContainerConfig(options);
   const order = ladderOrder(config.breakpointOrder);
@@ -50,17 +59,20 @@ export const defineContainer = (
     if (size in builtinClassMap) {
       return builtinClassMap[size as keyof typeof builtinClassMap];
     }
-    // Open sizes (configured or pass-through for WP / project-specific names)
     return measureClassName(size);
   };
 
   const width = (
     size?: string | null,
-    breakpoint: ContainerBreakpoint = "base"
+    breakpoint: ContainerBreakpoint = "base",
   ): string => {
     if (size === "full") return "100vw";
     const name =
-      !size || size === "none" || size === "center" || size === "left" || size === "right"
+      !size ||
+      size === "none" ||
+      size === "center" ||
+      size === "left" ||
+      size === "right"
         ? "default"
         : size;
     const def = config.sizes[name] ?? config.sizes.default;
@@ -68,19 +80,18 @@ export const defineContainer = (
   };
 
   const paddingTotal = (
-    breakpoint: ContainerBreakpoint = "base"
+    breakpoint: ContainerBreakpoint = "base",
   ): string => {
     const pad = resolveAtBreakpoint(config.padding, breakpoint, order);
     return `calc(${pad} * 2)`;
   };
 
-  /** Viewport reference matching `--cntr-vw` (compensation off → 100%). */
   const viewportRef = (): string =>
     config.scrollbarCompensation === false ? "100%" : "100vw";
 
   const contentBoxWidth = (
     size?: string | null,
-    breakpoint: ContainerBreakpoint = "base"
+    breakpoint: ContainerBreakpoint = "base",
   ): string => {
     if (size === "full") {
       return viewportRef();
@@ -99,7 +110,10 @@ export const defineContainer = (
     get cssVariables() {
       return toCssVariables(config);
     },
-    toCss: () => toCss(config),
+    toCss: (cssOptions) => toCss(config, cssOptions),
+    toThemeCss: () => toThemeCss(config),
+    writeCss: (filePath, cssOptions) =>
+      writeContainerCss(instance, filePath, cssOptions),
     tailwindPlugin: () => createContainerTailwindPlugin(config),
   };
 

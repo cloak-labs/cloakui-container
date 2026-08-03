@@ -1,6 +1,6 @@
 import type { ResponsiveLength } from "./types";
-/** Default step keys (excludes `base`) matching common Tailwind screens. */
-export declare const defaultBreakpointOrder: readonly ["sm", "md", "lg", "xl", "2xl", "3xl"];
+/** Default step keys (excludes `base`) matching Tailwind's default screens. */
+export declare const defaultBreakpointOrder: readonly ["sm", "md", "lg", "xl", "2xl"];
 /**
  * Full ladder including `base` — back-compat export for callers that walked a
  * fixed list. Prefer `config.breakpointOrder` / `ladderOrder(config)`.

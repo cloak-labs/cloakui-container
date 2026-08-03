@@ -1,13 +1,12 @@
 import type { ResponsiveLength } from "./types";
 
-/** Default step keys (excludes `base`) matching common Tailwind screens. */
+/** Default step keys (excludes `base`) matching Tailwind's default screens. */
 export const defaultBreakpointOrder = [
   "sm",
   "md",
   "lg",
   "xl",
   "2xl",
-  "3xl",
 ] as const;
 
 /**
