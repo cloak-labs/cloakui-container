@@ -1,0 +1,27 @@
+/*
+  Optional container-query helpers for @cloakui/container.
+
+  Import separately when a host establishes a containment context, e.g.:
+
+    .my-panel { container-type: inline-size; }
+    @import "@cloakui/container/cq.css";
+
+  Descendants of a size container resolve `--cntr-vw` to the container
+  inline size so gutters / full-bleed math track the query container.
+*/
+
+@container (min-width: 0px) {
+  * {
+    --cntr-vw: 100cqi;
+    --100vw: var(--cntr-vw);
+  }
+}
+
+/*
+  Explicit opt-in on an element (parent or self must establish container-type
+  for `100cqi` to resolve against a query container).
+*/
+.cntr-cq {
+  --cntr-vw: 100cqi;
+  --100vw: var(--cntr-vw);
+}

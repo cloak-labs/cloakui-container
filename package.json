@@ -1,0 +1,64 @@
+{
+  "name": "@cloakui/container",
+  "version": "0.1.0",
+  "description": "Framework-agnostic container layout primitives with a JS config as the single source of truth for widths, padding, CSS, and image sizes math.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./tailwind": {
+      "types": "./dist/tailwind.d.ts",
+      "import": "./dist/tailwind.js",
+      "require": "./dist/tailwind.js"
+    },
+    "./styles.css": "./css/styles.css",
+    "./cq.css": "./css/cq.css"
+  },
+  "scripts": {
+    "dev": "tsc -p tsconfig.json -w --preserveWatchOutput",
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --import tsx --test src/defineContainer.test.ts",
+    "clean": "rm -rf .turbo && rm -rf dist && npm run clean:modules",
+    "clean:modules": "rm -rf node_modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cloak-labs/cloakui-container.git"
+  },
+  "keywords": [
+    "cloakui",
+    "container",
+    "layout",
+    "css",
+    "max-width",
+    "responsive",
+    "tailwind"
+  ],
+  "author": "Kaelan Smith",
+  "license": "LGPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/cloak-labs/cloakui-container/issues"
+  },
+  "homepage": "https://github.com/cloak-labs/cloakui-container#readme",
+  "devDependencies": {
+    "@types/node": "^18.18.1",
+    "tailwindcss": "^3.4.4",
+    "tsx": "^4.23.5",
+    "typescript": "^5.3.2"
+  },
+  "peerDependencies": {
+    "tailwindcss": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
