@@ -8,6 +8,7 @@ type CssSource = ResolvedContainerConfig | {
  * Node-only — use from a prebuild script, not in the browser.
  *
  * ```ts
+ * import { writeContainerCss } from "@cloakui/container/node";
  * writeContainerCss(container, "src/container.generated.css", { theme: true });
  * ```
  */

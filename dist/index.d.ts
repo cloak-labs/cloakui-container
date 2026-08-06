@@ -4,9 +4,7 @@ export { defaultBreakpointOrder, ladderOrder, measureClassName, orderedBreakpoin
 export { breakpointsFromScreens, screenMinWidth, type BreakpointsFromScreensResult, type ScreenValue, type ScreensMap, } from "./breakpointsFromScreens";
 export { toCss, toCssVariables, type ToCssOptions } from "./toCss";
 export { toThemeCss, themeTokenMaps, type ThemeTokenMaps } from "./themeTokens";
-export { writeContainerCss } from "./writeContainerCss";
-export { toSizeCss } from "./sizesCss";
+export { alignClassName, toSizeCss } from "./sizesCss";
 export { baseContainerVariables } from "./cssVariables";
-export { createContainerTailwindPlugin } from "./tailwindPlugin";
 export type { ContainerBreakpoint, ContainerBreakpoints, ContainerContextConfig, ContainerSizeDef, ContainerSizeName, DefineContainerOptions, ResolvedContainerConfig, ResolvedSizeDef, ResponsiveLength, WidthMode, } from "./types";
 //# sourceMappingURL=index.d.ts.map

@@ -1,19 +1,17 @@
 import { gutterVarName, measureClassName, sizeNames, widthVarName, } from "./resolve";
-const widthModeRules = (config) => {
+const widthModeRules = (config, wVar) => {
     if (config.widthMode === "min") {
-        return `  width: min(var(--cntr-width), calc(100% - (var(--cntr-padding) * 2)));
+        return `  width: min(var(${wVar}), calc(100% - (var(--cntr-padding) * 2)));
   max-width: none;`;
     }
     return `  width: 100%;
-  max-width: var(--cntr-width);`;
+  max-width: var(${wVar});`;
 };
+/** Class for align-start / align-end targeting a size (default → no suffix). */
+export const alignClassName = (side, sizeName) => sizeName === "default" ? `align-${side}` : `align-${side}-${sizeName}`;
 const nestGutterZero = (measureSelectors, name) => {
     const g = `gutter-${name}`;
-    const hosts = [
-        ...measureSelectors.map((c) => `.${c}`),
-        ".cntr-start",
-        ".cntr-end",
-    ];
+    const hosts = measureSelectors.map((c) => `.${c}`);
     const hostList = hosts.join(",\n");
     return `${hostList.split(",\n").map((h) => `${h} .pl-${g}`).join(",\n")},
 .pl-${g} .pl-${g} {
@@ -31,35 +29,78 @@ ${hostList.split(",\n").map((h) => `${h} .mr-${g}`).join(",\n")},
 .mr-${g} .mr-${g} {
   margin-inline-end: 0;
 }
-.ml-${g} .cntr-start {
-  margin-inline-start: 0;
 }`;
 };
+const alignUtilities = (config) => {
+    const names = sizeNames(config);
+    const chunks = [];
+    for (const name of names) {
+        const gVar = gutterVarName(name);
+        const startCls = alignClassName("start", name);
+        const endCls = alignClassName("end", name);
+        chunks.push(`.${startCls} {
+  margin-inline-start: var(${gVar});
+  margin-inline-end: auto;
+  padding-inline-start: 0;
+  width: auto;
+}
+.${endCls} {
+  margin-inline-start: auto;
+  margin-inline-end: var(${gVar});
+  padding-inline-end: 0;
+  width: auto;
+}`);
+    }
+    return chunks.join("\n\n");
+};
+const alignNestZero = (config) => {
+    const names = sizeNames(config);
+    const measureSelectors = names.map((n) => `.${measureClassName(n)}`);
+    const startAlign = names.map((n) => `.${alignClassName("start", n)}`);
+    const endAlign = names.map((n) => `.${alignClassName("end", n)}`);
+    const startRules = measureSelectors
+        .flatMap((m) => startAlign.map((a) => `${m} ${a}`))
+        .join(",\n");
+    const endRules = measureSelectors
+        .flatMap((m) => endAlign.map((a) => `${m} ${a}`))
+        .join(",\n");
+    const chunks = [];
+    if (startRules) {
+        chunks.push(`${startRules} {
+  margin-inline-start: 0;
+}`);
+    }
+    if (endRules) {
+        chunks.push(`${endRules} {
+  margin-inline-end: 0;
+}`);
+    }
+    return chunks.join("\n\n");
+};
 /**
- * Emit measure classes, max-width/width helpers, and named gutter utilities for
- * the configured size map.
+ * Emit measure classes, align modifiers, max-width/width helpers, and named
+ * gutter utilities for the configured size map.
+ *
+ * Measure classes do not rescope `--cntr-width` — that token always means the
+ * default measure. Named sizes use their own `--cntr-width-{name}` for
+ * `max-width`. Align modifiers (`align-start-{name}`) only un-center and flush
+ * to a size's gutter; pair them with a measure class (e.g. `cntr align-start-wide`).
  */
 export const toSizeCss = (config) => {
     const names = sizeNames(config);
     const chunks = [];
-    const widthRules = widthModeRules(config);
     const measureSelectors = names.map(measureClassName);
     for (const name of names) {
         const cls = measureClassName(name);
         const wVar = widthVarName(name);
         const size = config.sizes[name];
-        const rescope = [
-            `  /* rescope measure for nested gutter / max-w-cntr descendants */`,
-            `  --cntr-width: var(${wVar});`,
-        ];
+        const locals = [];
         if (size.padding?.base) {
-            rescope.push(`  --cntr-padding: ${size.padding.base};`);
+            locals.push(`  --cntr-padding: ${size.padding.base};`);
         }
-        rescope.push(`  --cntr-start-gutter: 0px;`);
-        rescope.push(`  --cntr-start-right-margin: 0px;`);
+        const localBlock = locals.length ? `${locals.join("\n")}\n` : "";
         chunks.push(`.${cls} {
-${rescope.join("\n")}
-${widthRules}
+${localBlock}${widthModeRules(config, wVar)}
   margin-inline: auto;
   padding-inline: var(--cntr-padding);
 }`);
@@ -80,6 +121,8 @@ ${widthRules}
 }`);
         }
     }
+    // Align after measure classes so margin/padding/width overrides win in cascade.
+    chunks.push(alignUtilities(config));
     for (const name of names) {
         if (name === "default")
             continue;
@@ -111,20 +154,16 @@ ${widthRules}
             pairs.push(`.${outer} .${inner}`);
         }
     }
+    // Pad only: nested measures already sit inside an outer pad, so drop the
+    // inner pad. Do not zero margin-inline — measures use margin-inline: auto to
+    // center, and a narrower nested measure (e.g. cntr-wide max-w-xl inside cntr)
+    // should stay centered.
     if (pairs.length) {
         chunks.push(`${pairs.join(",\n")} {
   padding-inline: 0;
-  margin-inline: 0;
 }`);
     }
-    for (const outer of measureSelectors) {
-        chunks.push(`.${outer} .cntr-start {
-  padding-inline-end: 0;
-}
-.${outer} .cntr-end {
-  padding-inline-start: 0;
-}`);
-    }
+    chunks.push(alignNestZero(config));
     for (const name of names) {
         if (name === "default")
             continue;

@@ -17,7 +17,6 @@ export const defaultContainerConfig = {
     widthMode: "max",
     scrollbarCompensation: false,
     sidebarWidth: "0px",
-    startEndAlignSize: "default",
     contexts: {},
     breakpoints: {
         sm: "640px",
@@ -29,12 +28,10 @@ export const defaultContainerConfig = {
     breakpointOrder: ["sm", "md", "lg", "xl", "2xl"],
     selectors: [":root", "#root"],
 };
-/** Align / semantic size → class (custom sizes use `cntr-{name}`). */
+/** Semantic size → measure class (custom sizes use `cntr-{name}`). */
 export const builtinClassMap = {
     default: "cntr",
     center: "cntr",
-    left: "cntr-start",
-    right: "cntr-end",
     full: "cntr-full",
     none: "",
 };

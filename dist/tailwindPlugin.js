@@ -102,13 +102,15 @@ function parseSizeCssToComponents(css) {
     let match;
     while ((match = ruleRe.exec(css))) {
         const selector = match[1].trim();
-        const body = match[2];
+        // Strip comments first — a leading `/* ... */` on the same ";" chunk as a
+        // declaration would otherwise drop that declaration.
+        const body = match[2].replace(/\/\*[\s\S]*?\*\//g, "");
         if (!selector || selector.startsWith("@"))
             continue;
         const decls = {};
         for (const line of body.split(";")) {
             const trimmed = line.trim();
-            if (!trimmed || trimmed.startsWith("/*"))
+            if (!trimmed)
                 continue;
             const colon = trimmed.indexOf(":");
             if (colon === -1)
@@ -150,11 +152,17 @@ export function createContainerTailwindPlugin(configOrOptions = {}, maybeOptions
         resolved = isResolved(raw) ? raw : resolveContainerConfig(raw);
     }
     const theme = themeExtensions(resolved);
-    return plugin(({ addBase, addComponents }) => {
+    return plugin(({ addComponents }) => {
         if (!emitBaseCss)
             return;
+        // Emit in `@layer components` (via addComponents), not `@layer base`.
+        // Agency `shared/styles/base.css` is imported *after* `@tailwind base` and
+        // still sets legacy `--cntr-width-wide-2xl: 86rem`; globals.css then assigns
+        // `--cntr-width-wide: var(--cntr-width-wide-2xl)` at 2xl. Variables in the
+        // components layer beat that base-layer default so project defineContainer
+        // widths win. Measure classes belong here anyway.
         const selectorList = resolved.selectors.join(", ");
-        addBase({
+        addComponents({
             [selectorList]: baseContainerVariables(resolved),
         });
         for (const bp of resolved.breakpointOrder) {
@@ -162,7 +170,7 @@ export function createContainerTailwindPlugin(configOrOptions = {}, maybeOptions
             if (!Object.keys(decls).length)
                 continue;
             const min = resolved.breakpoints[bp];
-            addBase({
+            addComponents({
                 [`@media (min-width: ${min})`]: {
                     [selectorList]: decls,
                 },
@@ -177,14 +185,14 @@ export function createContainerTailwindPlugin(configOrOptions = {}, maybeOptions
                 if (size.padding[bp] == null)
                     continue;
                 const min = resolved.breakpoints[bp];
-                addBase({
+                addComponents({
                     [`@media (min-width: ${min})`]: {
                         [cls]: { "--cntr-padding": size.padding[bp] },
                     },
                 });
             }
         }
-        emitContextBase(addBase, resolved);
+        emitContextBase(addComponents, resolved);
         const sizeCss = toSizeCss(resolved);
         addComponents(parseSizeCssToComponents(sizeCss));
     }, {

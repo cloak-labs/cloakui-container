@@ -1,6 +1,5 @@
 import { orderedBreakpoints, resolveAtBreakpoint } from "./resolve";
 import { type ToCssOptions } from "./toCss";
-import { createContainerTailwindPlugin } from "./tailwindPlugin";
 import type { ContainerBreakpoint, ContainerSizeName, DefineContainerOptions, ResolvedContainerConfig } from "./types";
 export type ContainerInstance = {
     config: ResolvedContainerConfig;
@@ -13,16 +12,15 @@ export type ContainerInstance = {
     toCss: (options?: ToCssOptions) => string;
     /** Tailwind v4 `@theme` tokens only (`px-cntr-pad`, `max-w-cntr`, …). */
     toThemeCss: () => string;
-    /**
-     * Write `toCss()` output to a file (Node prebuild). Same options as `toCss`.
-     */
-    writeCss: (filePath: string, options?: ToCssOptions) => void;
-    tailwindPlugin: () => ReturnType<typeof createContainerTailwindPlugin>;
 };
 /**
  * Define a project-level container configuration. The returned instance is the
  * single source of truth for CSS variables, utility theme tokens, and JS width
  * reads (e.g. responsive image `sizes`).
+ *
+ * Browser-safe: no Node or Tailwind imports. For build tooling use
+ * `@cloakui/container/tailwind` (`createContainerTailwindPlugin`) and
+ * `@cloakui/container/node` (`writeContainerCss`).
  */
 export declare const defineContainer: (options?: DefineContainerOptions) => ContainerInstance;
 export { orderedBreakpoints, resolveAtBreakpoint };

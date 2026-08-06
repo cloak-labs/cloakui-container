@@ -2,12 +2,14 @@ import { builtinClassMap } from "./defaults";
 import { ladderOrder, measureClassName, orderedBreakpoints, resolveAtBreakpoint, resolveContainerConfig, } from "./resolve";
 import { toCss, toCssVariables } from "./toCss";
 import { toThemeCss } from "./themeTokens";
-import { createContainerTailwindPlugin } from "./tailwindPlugin";
-import { writeContainerCss } from "./writeContainerCss";
 /**
  * Define a project-level container configuration. The returned instance is the
  * single source of truth for CSS variables, utility theme tokens, and JS width
  * reads (e.g. responsive image `sizes`).
+ *
+ * Browser-safe: no Node or Tailwind imports. For build tooling use
+ * `@cloakui/container/tailwind` (`createContainerTailwindPlugin`) and
+ * `@cloakui/container/node` (`writeContainerCss`).
  */
 export const defineContainer = (options = {}) => {
     const config = resolveContainerConfig(options);
@@ -38,7 +40,7 @@ export const defineContainer = (options = {}) => {
         const pad = resolveAtBreakpoint(config.padding, breakpoint, order);
         return `calc(${pad} * 2)`;
     };
-    const viewportRef = () => config.scrollbarCompensation === false ? "100%" : "100vw";
+    const viewportRef = () => "100vw";
     const contentBoxWidth = (size, breakpoint = "base") => {
         if (size === "full") {
             return viewportRef();
@@ -58,8 +60,6 @@ export const defineContainer = (options = {}) => {
         },
         toCss: (cssOptions) => toCss(config, cssOptions),
         toThemeCss: () => toThemeCss(config),
-        writeCss: (filePath, cssOptions) => writeContainerCss(instance, filePath, cssOptions),
-        tailwindPlugin: () => createContainerTailwindPlugin(config),
     };
     return instance;
 };

@@ -72,10 +72,6 @@ export const resolveContainerConfig = (options = {}) => {
     else if (typeof options.scrollbarCompensation === "string") {
         scrollbarCompensation = options.scrollbarCompensation;
     }
-    const startEndAlignSize = options.startEndAlignSize ?? defaultContainerConfig.startEndAlignSize;
-    if (!sizes[startEndAlignSize]) {
-        throw new Error(`startEndAlignSize "${startEndAlignSize}" is not a configured size.`);
-    }
     const breakpoints = {
         ...defaultContainerConfig.breakpoints,
         ...options.breakpoints,
@@ -91,7 +87,6 @@ export const resolveContainerConfig = (options = {}) => {
         widthMode: options.widthMode ?? "max",
         scrollbarCompensation,
         sidebarWidth: options.sidebarWidth ?? defaultContainerConfig.sidebarWidth,
-        startEndAlignSize,
         contexts: options.contexts ?? {},
         breakpoints,
         breakpointOrder,

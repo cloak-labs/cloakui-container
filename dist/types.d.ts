@@ -42,18 +42,14 @@ export type DefineContainerOptions = {
      */
     widthMode?: WidthMode;
     /**
-     * Opt-in scrollbar compensation for viewport units.
-     * `false` (default) → `--cntr-vw: 100%`
-     * `true` → use `"17px"`; or pass an explicit length string.
+     * Opt-in scrollbar (and optional sidebar) compensation for `--cntr-vw`.
+     * `false` (default) → `--cntr-vw: 100vw`
+     * `true` → use `"17px"` scrollbar width; or pass an explicit length string
+     * → `--cntr-vw: calc(100vw - var(--sidebar-w) - var(--scrollbar-w))`
      */
     scrollbarCompensation?: boolean | string;
     /** Sidebar width used when scrollbar compensation is on. */
     sidebarWidth?: string;
-    /**
-     * Size name whose gutter aligns `cntr-start` / `cntr-end`.
-     * @default "default"
-     */
-    startEndAlignSize?: string;
     /**
      * Named context overrides (e.g. `project-page`). Maps merge onto global
      * ladders so omitting a breakpoint inherits the global step.
@@ -85,7 +81,6 @@ export type ResolvedContainerConfig = {
     widthMode: WidthMode;
     scrollbarCompensation: string | false;
     sidebarWidth: string;
-    startEndAlignSize: string;
     contexts: Record<string, ContainerContextConfig>;
     /** Min-width per step key (no `base`). */
     breakpoints: ContainerBreakpoints;
