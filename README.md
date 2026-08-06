@@ -28,7 +28,7 @@ It is usually overkill for app chrome (dashboards, settings) where layout is mos
 | Padding differs from block to block | One padding ladder (`--cntr-padding`) shared by measure classes and `px-cntr-pad` |
 | Full-bleed / edge-aligned pieces do not line up | Gutters derived from width + padding (`px-gutter`, `px-gutter-wide`) |
 | Tweaking sitewide width means a repo-wide hunt | Change `defineContainer({ sizes })` once; CSS and JS both read it |
-| Image `sizes` go stale after a redesign | `container.contentBoxWidth("wide", "xl")` builds the expression from the same config |
+| Handwriting image `sizes` that can easily go stale after a layout change | `container.contentBoxWidth("wide", "xl")` builds the expression from the same config |
 | Nested containers double-pad | Nest rules collapse inner padding when a measure sits inside another |
 
 ## Concepts (read this first)
@@ -72,10 +72,10 @@ Keys like `sm`, `xl`, or `2xl` in a size map are labels, not Tailwind APIs. Each
 
 **For Tailwind users**: if Tailwind's `2xl` screen is `1536px`, your container `breakpoints["2xl"]` should be `1536px` too. Otherwise `2xl:` utilities and container media queries disagree. Use `breakpointsFromScreens(theme.screens)` to keep them aligned, including any custom screens/breakpoints you add.
 
-### Full / start / end
+### Full / align
 
-- `.cntr-full`: edge to edge (no measure max-width)
-- `.cntr-start` / `.cntr-end`: align to one side; the gutter comes from the `startEndAlignSize` option (usually `default`)
+- `.cntr-full`: edge to edge (no measure max-width). Padding is opt-in — pair with `px-cntr-pad` / `px-gutter-*` when you want inset content on a full-bleed band.
+- `.align-start` / `.align-end` / `.align-start-{name}` / `.align-end-{name}`: positioning modifiers — un-center a measure and flush it to a size's gutter. Pair with a measure class, e.g. `cntr align-start-wide` (default max-width, flush to the wide band's start edge).
 
 ### One config, three outputs
 
@@ -126,12 +126,14 @@ Generated measure CSS (variables, `.cntr` / `.cntr-wide`, gutters, breakpoints).
 
 ```ts
 // Tailwind v3: the plugin emits it for you
-plugins: [container.tailwindPlugin()];
+import { createContainerTailwindPlugin } from "@cloakui/container/tailwind";
+plugins: [createContainerTailwindPlugin(container.config)];
 ```
 
 ```ts
 // Tailwind v4 (or no Tailwind): write measure CSS + @theme tokens in a prebuild step
-container.writeCss("src/container.generated.css", { theme: true });
+import { writeContainerCss } from "@cloakui/container/node";
+writeContainerCss(container, "src/container.generated.css", { theme: true });
 ```
 
 ```css
@@ -155,14 +157,88 @@ container.writeCss("src/container.generated.css", { theme: true });
 </div>
 ```
 
-4. Use the same numbers in JS (for example image `sizes`):
+4. Read the same numbers from JS when you need them (image `sizes`, layout math, …):
 
 ```ts
 container.className("wide"); // "cntr-wide"
 container.width("wide", "xl"); // "84rem"
 container.contentBoxWidth("wide", "xl");
-// → calc(min(84rem, 100%) - calc(1.5rem * 2))
+// → calc(min(84rem, 100vw) - calc(1.5rem * 2))
 ```
+
+See [Dynamic image `sizes`](#dynamic-image-sizes) when CMS blocks drive the page.
+
+## Dynamic image `sizes`
+
+`contentBoxWidth()` returns a CSS length for the content box of a measure at a breakpoint — the same width the section actually uses on screen (measure minus horizontal padding, clamped to the viewport). You can drop that into an `<img sizes="…">` attribute so the browser picks a sensible `srcset` candidate.
+
+This pattern assumes a **CMS-driven frontend**: the page is assembled from a JSON tree of blocks, each block declares (or inherits) a container size, and nested images can read that parent width to determine its own slot size.
+
+The example below uses [`@cloakui/block-renderer`](https://github.com/cloak-labs/cloakui-block-renderer), our framework-agnostic block renderer: you map block types to components and optional **data routers** that turn CMS block JSON into component props (including `sizes` for images).
+
+```ts
+// container.ts
+import { defineContainer } from "@cloakui/container";
+
+export const container = defineContainer({
+  sizes: {
+    default: { base: "56rem", "2xl": "64rem" },
+    wide: { base: "72rem", xl: "84rem", "2xl": "96rem" },
+  },
+  padding: { base: "1rem", sm: "1.5rem" },
+});
+```
+
+```ts
+// blocks/imageDataRouter.ts
+import { container } from "../container";
+
+/**
+ * CMS image block JSON → <img> props.
+ * `block.data.container` is the parent section's measure (e.g. "wide" / "full"),
+ * set in the CMS when the editor picks a container width.
+ */
+export function imageDataRouter(block: {
+  attrs?: { align?: string; src?: string; alt?: string };
+}) {
+  const size = block.data.container ?? "default"; // "wide" | "full" | "default" | …
+
+  // One length per major step; this is a trivial example on purpose (you might want a more elaborate solution here).
+  const sizes = [
+    `(max-width: 1023px) ${container.contentBoxWidth(size, "base")}`,
+    `(max-width: 1279px) ${container.contentBoxWidth(size, "lg")}`,
+    container.contentBoxWidth(size, "xl"),
+  ].join(", ");
+
+  return {
+    src: block.data?.src,
+    alt: block.data?.alt ?? "",
+    sizes,
+  };
+}
+```
+
+```ts
+// blocks/renderer.ts
+import { BlockRenderer } from "@cloakui/block-renderer";
+import { Image } from "../components/Image";
+import { imageDataRouter } from "./imageDataRouter";
+
+export const renderer = new BlockRenderer({
+  blocks: {
+    "core/image": {
+      component: Image,
+      dataRouter: imageDataRouter,
+    },
+    // …other CMS block types
+  },
+});
+
+// Later, with CMS JSON:
+// renderer.render(page.blocks)
+```
+
+When the CMS block sits in a `wide` section, `sizes` tracks the wide measure; when the design tokens change in `defineContainer`, image candidates follow without hunting string literals.
 
 ## Config reference
 
@@ -253,7 +329,6 @@ That matches `#root.project-page` (and any other selector you listed in `selecto
 |--------|---------|---------|
 | `widthMode` | `"max"` | `"max"`: `width: 100%; max-width: var(--cntr-width)`. `"min"`: width is `min(measure, 100% - pad)`. |
 | `scrollbarCompensation` | off | When on, `--cntr-vw` subtracts scrollbar width and optional `sidebarWidth`. |
-| `startEndAlignSize` | `"default"` | Which size's gutter feeds `.cntr-start` / `.cntr-end`. Use `"wide"` if start/end should line up with the wide band. |
 | `selectors` | `:root`, `#root` | Where CSS variables are attached. |
 
 ## Classes and tokens
@@ -262,9 +337,9 @@ That matches `#root.project-page` (and any other selector you listed in `selecto
 
 | Class | Role |
 |-------|------|
-| `cntr` / `cntr-{name}` | Measure (centers, max-width, padding). Named sizes rescope `--cntr-width` for nested gutters. |
-| `cntr-full` | Full viewport width |
-| `cntr-start` / `cntr-end` | Start/end aligned band |
+| `cntr` / `cntr-{name}` | Measure (centers, max-width, padding). Named sizes use `--cntr-width-{name}`; `--cntr-width` always stays the default measure. |
+| `cntr-full` | Full viewport width (padding opt-in via utilities; no nest pad reset) |
+| `align-start` / `align-end` / `align-*-{name}` | Flush a measure to a size's start/end edge (pair with `cntr` / `cntr-{name}`) |
 | `max-w-cntr` / `max-w-cntr-{name}` | Max-width only |
 | `px-cntr-pad`, `pl-cntr-pad`, … | Inner padding token |
 | `px-gutter`, `px-gutter-{name}`, … | Edge gutters |
@@ -279,7 +354,7 @@ Prefer `w-full px-cntr-pad` when you want full width with the shared pad token.
 | `gutter` / `gutter-{name}` | spacing | `px-gutter`, `px-gutter-wide`, … |
 | `cntr` / `cntr-{name}` | width / maxWidth | `w-cntr`, `max-w-cntr-wide`, … |
 
-`--cntr-vw` is the viewport reference gutters use (`100%` by default).
+`--cntr-vw` is the viewport reference gutters use (`100vw` by default). Do not use `100%` here — percentage resolves against the containing block of the element that applies the gutter (e.g. `padding-left`), which collapses edge gutters inside nested or measure-sized parents.
 
 ### Optional: container queries
 
@@ -295,13 +370,16 @@ The host needs `container-type`. See comments in `cq.css`.
 
 ```ts
 // tailwind.config.ts
-plugins: [container.tailwindPlugin()];
+import { createContainerTailwindPlugin } from "@cloakui/container/tailwind";
+import { container } from "./container";
+
+plugins: [createContainerTailwindPlugin(container.config)];
 ```
 
 That registers tokens and emits base CSS. Tokens only:
 
 ```ts
-container.tailwindPlugin({ emitBaseCss: false });
+createContainerTailwindPlugin({ config: container.config, emitBaseCss: false });
 ```
 
 ## Tailwind v4
@@ -310,9 +388,10 @@ Same config as v3; emit CSS instead of using the JS plugin.
 
 ```ts
 // scripts/emit-container-css.ts (or any prebuild)
+import { writeContainerCss } from "@cloakui/container/node";
 import { container } from "../src/container";
 
-container.writeCss("src/container.generated.css", { theme: true });
+writeContainerCss(container, "src/container.generated.css", { theme: true });
 ```
 
 ```css
@@ -333,7 +412,7 @@ Escape hatch if you still want the v3-style plugin under v4:
 ```ts
 // container.tailwind.ts
 import { container } from "./container";
-export default container.tailwindPlugin();
+export default createContainerTailwindPlugin(container.config);
 ```
 
 ```css
