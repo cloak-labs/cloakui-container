@@ -15,6 +15,11 @@
       "import": "./dist/tailwind.js",
       "require": "./dist/tailwind.js"
     },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js",
+      "require": "./dist/node.js"
+    },
     "./styles.css": "./css/styles.css",
     "./cq.css": "./css/cq.css"
   },
@@ -60,5 +65,9 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "sideEffects": [
+    "**/*.css",
+    "./css/**"
+  ]
 }
