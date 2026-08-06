@@ -8,8 +8,6 @@ import {
 } from "./resolve";
 import { toCss, toCssVariables, type ToCssOptions } from "./toCss";
 import { toThemeCss } from "./themeTokens";
-import { createContainerTailwindPlugin } from "./tailwindPlugin";
-import { writeContainerCss } from "./writeContainerCss";
 import type {
   ContainerBreakpoint,
   ContainerSizeName,
@@ -34,17 +32,16 @@ export type ContainerInstance = {
   toCss: (options?: ToCssOptions) => string;
   /** Tailwind v4 `@theme` tokens only (`px-cntr-pad`, `max-w-cntr`, …). */
   toThemeCss: () => string;
-  /**
-   * Write `toCss()` output to a file (Node prebuild). Same options as `toCss`.
-   */
-  writeCss: (filePath: string, options?: ToCssOptions) => void;
-  tailwindPlugin: () => ReturnType<typeof createContainerTailwindPlugin>;
 };
 
 /**
  * Define a project-level container configuration. The returned instance is the
  * single source of truth for CSS variables, utility theme tokens, and JS width
  * reads (e.g. responsive image `sizes`).
+ *
+ * Browser-safe: no Node or Tailwind imports. For build tooling use
+ * `@cloakui/container/tailwind` (`createContainerTailwindPlugin`) and
+ * `@cloakui/container/node` (`writeContainerCss`).
  */
 export const defineContainer = (
   options: DefineContainerOptions = {},
@@ -86,8 +83,7 @@ export const defineContainer = (
     return `calc(${pad} * 2)`;
   };
 
-  const viewportRef = (): string =>
-    config.scrollbarCompensation === false ? "100%" : "100vw";
+  const viewportRef = (): string => "100vw";
 
   const contentBoxWidth = (
     size?: string | null,
@@ -112,9 +108,6 @@ export const defineContainer = (
     },
     toCss: (cssOptions) => toCss(config, cssOptions),
     toThemeCss: () => toThemeCss(config),
-    writeCss: (filePath, cssOptions) =>
-      writeContainerCss(instance, filePath, cssOptions),
-    tailwindPlugin: () => createContainerTailwindPlugin(config),
   };
 
   return instance;

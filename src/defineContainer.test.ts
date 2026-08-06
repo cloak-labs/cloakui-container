@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { breakpointsFromScreens } from "./breakpointsFromScreens";
 import { defineContainer } from "./defineContainer";
+import { writeContainerCss } from "./writeContainerCss";
 
 describe("defineContainer", () => {
   it("supplies only a default size preset when sizes are omitted", () => {
@@ -26,8 +27,6 @@ describe("defineContainer", () => {
     assert.equal(container.className("default"), "cntr");
     assert.equal(container.className("wide"), "cntr-wide");
     assert.equal(container.className("full"), "cntr-full");
-    assert.equal(container.className("left"), "cntr-start");
-    assert.equal(container.className("right"), "cntr-end");
     assert.equal(container.className("none"), "");
     assert.equal(container.className("narrow"), "cntr-narrow");
   });
@@ -103,11 +102,12 @@ describe("defineContainer", () => {
       css,
       /@media \(min-width: 640px\) \{\n\.cntr-wide \{\n  --cntr-padding:\s*2\.5rem;/,
     );
-    // Default measure must not set a local padding override
+    // Default measure must not set a local padding override or rescope --cntr-width
     assert.match(
       css,
-      /\.cntr \{\n  \/\* rescope[\s\S]*?\n  --cntr-width: var\(--cntr-width\);\n  --cntr-start-gutter:/,
+      /\.cntr \{\n  width: 100%;\n  max-width: var\(--cntr-width\);/,
     );
+    assert.doesNotMatch(css, /\.cntr \{\n(?:[^\n]*\n)*?  --cntr-width:/);
   });
 
   it("emits widthMode min rules", () => {
@@ -122,9 +122,9 @@ describe("defineContainer", () => {
     assert.match(css, /max-width:\s*none/);
   });
 
-  it("defaults scrollbar compensation off (--cntr-vw: 100%)", () => {
+  it("defaults scrollbar compensation off (--cntr-vw: 100vw)", () => {
     const vars = defineContainer().cssVariables;
-    assert.equal(vars["--cntr-vw"], "100%");
+    assert.equal(vars["--cntr-vw"], "100vw");
     assert.equal(vars["--scrollbar-w"], "0px");
   });
 
@@ -133,10 +133,13 @@ describe("defineContainer", () => {
       scrollbarCompensation: true,
     }).cssVariables;
     assert.equal(vars["--scrollbar-w"], "17px");
-    assert.match(vars["--cntr-vw"], /100vw/);
+    assert.equal(
+      vars["--cntr-vw"],
+      "calc(100vw - var(--sidebar-w) - var(--scrollbar-w))",
+    );
   });
 
-  it("builds content-box width with --cntr-vw semantics", () => {
+  it("builds content-box width with viewport semantics", () => {
     const withWide = {
       sizes: {
         default: { base: "56rem" },
@@ -147,9 +150,9 @@ describe("defineContainer", () => {
     const off = defineContainer(withWide);
     assert.equal(
       off.contentBoxWidth("wide", "xl"),
-      "calc(min(76rem, 100%) - calc(1.5rem * 2))",
+      "calc(min(76rem, 100vw) - calc(1.5rem * 2))",
     );
-    assert.equal(off.contentBoxWidth("full"), "100%");
+    assert.equal(off.contentBoxWidth("full"), "100vw");
 
     const on = defineContainer({
       ...withWide,
@@ -176,29 +179,46 @@ describe("defineContainer", () => {
     assert.ok(vars["--cntr-gutter-wide"]);
   });
 
-  it("uses startEndAlignSize for start/end gutters", () => {
-    const def = defineContainer({
+  it("measure classes use size width vars without rescoping --cntr-width", () => {
+    const css = defineContainer({
       sizes: {
-        default: { base: "56rem" },
+        default: { base: "56rem", "2xl": "64rem" },
         wide: { base: "72rem" },
       },
-    });
-    assert.equal(
-      def.cssVariables["--cntr-start-gutter"],
-      "var(--cntr-gutter)",
+    }).toCss();
+    assert.match(
+      css,
+      /\.cntr-wide \{\n  width: 100%;\n  max-width: var\(--cntr-width-wide\);/,
     );
+    assert.doesNotMatch(css, /\.cntr-wide \{[^}]*--cntr-width:/);
+  });
 
-    const wideAlign = defineContainer({
+  it("emits compositional align-start / align-end modifiers", () => {
+    const css = defineContainer({
       sizes: {
         default: { base: "56rem" },
         wide: { base: "72rem" },
       },
-      startEndAlignSize: "wide",
-    });
-    assert.equal(
-      wideAlign.cssVariables["--cntr-start-gutter"],
-      "var(--cntr-gutter-wide)",
+    }).toCss();
+    assert.match(
+      css,
+      /\.align-start \{\n  margin-inline-start: var\(--cntr-gutter\);\n  margin-inline-end: auto;\n  padding-inline-start: 0;\n  width: auto;/,
     );
+    assert.match(
+      css,
+      /\.align-start-wide \{\n  margin-inline-start: var\(--cntr-gutter-wide\);\n  margin-inline-end: auto;\n  padding-inline-start: 0;\n  width: auto;/,
+    );
+    assert.match(
+      css,
+      /\.align-end-wide \{\n  margin-inline-start: auto;\n  margin-inline-end: var\(--cntr-gutter-wide\);\n  padding-inline-end: 0;\n  width: auto;/,
+    );
+    // Nested inside a measure: zero page-edge inset
+    assert.match(
+      css,
+      /\.cntr-wide \.align-start-wide \{\n  margin-inline-start: 0;/,
+    );
+    assert.doesNotMatch(css, /\.cntr-start\b/);
+    assert.doesNotMatch(css, /--cntr-start-gutter/);
   });
 
   it("supports custom ladder steps like xmd", () => {
@@ -312,7 +332,47 @@ describe("defineContainer", () => {
     assert.doesNotMatch(measureOnly, /@theme/);
   });
 
-  it("writeCss writes combined CSS to disk", () => {
+  it("plugin emits size max-width on .cntr-wide without rescoping --cntr-width", async () => {
+    const { createContainerTailwindPlugin } = await import("./tailwindPlugin");
+    const container = defineContainer({
+      sizes: {
+        default: { base: "56rem" },
+        wide: { base: "76rem" },
+      },
+    });
+    const plugin = createContainerTailwindPlugin(container.config);
+    const components: Record<string, Record<string, string>> = {};
+    // Invoke the plugin handler the same way Tailwind does.
+    const handler = (plugin as { handler?: Function }).handler
+      ?? (plugin as { (): { handler: Function } })().handler;
+    // tailwindcss/plugin returns a function with handler + config
+    const pluginFn = plugin as unknown as {
+      handler: (api: {
+        addBase: Function;
+        addComponents: Function;
+      }) => void;
+    };
+    pluginFn.handler({
+      addBase: () => {},
+      addComponents: (rules: Record<string, Record<string, string>> | Array<Record<string, Record<string, string>>>) => {
+        const list = Array.isArray(rules) ? rules : [rules];
+        for (const group of list) {
+          Object.assign(components, group);
+        }
+      },
+    });
+    assert.equal(
+      components[".cntr-wide"]?.["max-width"],
+      "var(--cntr-width-wide)",
+    );
+    assert.equal(components[".cntr-wide"]?.["--cntr-width"], undefined);
+    assert.equal(
+      components[".cntr"]?.["max-width"],
+      "var(--cntr-width)",
+    );
+  });
+
+  it("writeContainerCss writes combined CSS to disk", () => {
     const dir = mkdtempSync(join(tmpdir(), "cloakui-container-"));
     const file = join(dir, "container.generated.css");
     try {
@@ -322,7 +382,7 @@ describe("defineContainer", () => {
           wide: { base: "72rem" },
         },
       });
-      container.writeCss(file, { theme: true });
+      writeContainerCss(container, file, { theme: true });
       const written = readFileSync(file, "utf8");
       assert.match(written, /--cntr-width-wide:\s*72rem/);
       assert.match(written, /@theme \{/);
