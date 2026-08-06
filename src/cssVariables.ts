@@ -17,9 +17,13 @@ export const baseContainerVariables = (
   const vars: Record<string, string> = {
     "--sidebar-w": config.sidebarWidth,
     "--scrollbar-w": compensation === false ? "0px" : compensation,
+    // Must be viewport-relative (not `100%`). Percentage resolves against the
+    // containing block of whichever element *uses* the gutter (e.g. padding),
+    // so nested / measure-sized parents collapse gutters to the pad floor.
+    // Use `cq.css` (`100cqi`) when gutters should track a query container.
     "--cntr-vw":
       compensation === false
-        ? "100%"
+        ? "100vw"
         : "calc(100vw - var(--sidebar-w) - var(--scrollbar-w))",
     "--cntr-padding": config.padding.base,
     "--cntr-padding-total": "calc(var(--cntr-padding) * 2)",
@@ -47,10 +51,6 @@ export const baseContainerVariables = (
     if (bp === "base" || value == null) continue;
     vars[`--cntr-padding-${bp}`] = value;
   }
-
-  const startGutter = gutterVarName(config.startEndAlignSize);
-  vars["--cntr-start-gutter"] = `var(${startGutter})`;
-  vars["--cntr-end-gutter"] = `var(${startGutter})`;
 
   return vars;
 };
