@@ -23,10 +23,8 @@ export {
 } from "./breakpointsFromScreens";
 export { toCss, toCssVariables, type ToCssOptions } from "./toCss";
 export { toThemeCss, themeTokenMaps, type ThemeTokenMaps } from "./themeTokens";
-export { writeContainerCss } from "./writeContainerCss";
-export { toSizeCss } from "./sizesCss";
+export { alignClassName, toSizeCss } from "./sizesCss";
 export { baseContainerVariables } from "./cssVariables";
-export { createContainerTailwindPlugin } from "./tailwindPlugin";
 export type {
   ContainerBreakpoint,
   ContainerBreakpoints,
