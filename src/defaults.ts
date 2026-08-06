@@ -19,7 +19,6 @@ export const defaultContainerConfig: ResolvedContainerConfig = {
   widthMode: "max",
   scrollbarCompensation: false,
   sidebarWidth: "0px",
-  startEndAlignSize: "default",
   contexts: {},
   breakpoints: {
     sm: "640px",
@@ -32,12 +31,10 @@ export const defaultContainerConfig: ResolvedContainerConfig = {
   selectors: [":root", "#root"],
 };
 
-/** Align / semantic size → class (custom sizes use `cntr-{name}`). */
+/** Semantic size → measure class (custom sizes use `cntr-{name}`). */
 export const builtinClassMap = {
   default: "cntr",
   center: "cntr",
-  left: "cntr-start",
-  right: "cntr-end",
   full: "cntr-full",
   none: "",
 } as const;
