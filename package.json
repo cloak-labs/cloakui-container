@@ -29,7 +29,9 @@
     "test": "npm run build && node --import tsx --test src/defineContainer.test.ts",
     "clean": "rm -rf .turbo && rm -rf dist",
     "clean:modules": "rm -rf node_modules",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check ."
   },
   "repository": {
     "type": "git",
@@ -51,10 +53,11 @@
   },
   "homepage": "https://github.com/cloak-labs/cloakui-container#readme",
   "devDependencies": {
-    "@types/node": "^18.18.1",
+    "@types/node": "^18.19.130",
     "tailwindcss": "^3.4.4",
     "tsx": "^4.23.5",
-    "typescript": "^5.3.2"
+    "typescript": "7.0.2",
+    "oxfmt": "0.71.0"
   },
   "peerDependencies": {
     "tailwindcss": ">=3.0.0"

@@ -10,10 +10,10 @@ export declare const builtinClassMap: {
 };
 /** @deprecated Use builtinClassMap + cntr-{name} for custom sizes */
 export declare const containerClassMap: {
-    readonly wide: "cntr-wide";
     readonly default: "cntr";
     readonly center: "cntr";
     readonly full: "cntr-full";
     readonly none: "";
+    readonly wide: "cntr-wide";
 };
 //# sourceMappingURL=defaults.d.ts.map

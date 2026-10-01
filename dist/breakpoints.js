@@ -1,11 +1,5 @@
 /** Default step keys (excludes `base`) matching Tailwind's default screens. */
-export const defaultBreakpointOrder = [
-    "sm",
-    "md",
-    "lg",
-    "xl",
-    "2xl",
-];
+export const defaultBreakpointOrder = ["sm", "md", "lg", "xl", "2xl"];
 /**
  * Full ladder including `base` — back-compat export for callers that walked a
  * fixed list. Prefer `config.breakpointOrder` / `ladderOrder(config)`.
