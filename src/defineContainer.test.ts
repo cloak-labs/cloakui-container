@@ -179,6 +179,51 @@ describe("defineContainer", () => {
     assert.ok(vars["--cntr-gutter-wide"]);
   });
 
+  it('warns when a configured container width is "100%"', () => {
+    const warnings: string[] = [];
+    const originalWarn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.join(" "));
+    };
+
+    try {
+      defineContainer({
+        sizes: {
+          default: { base: "56rem" },
+          wide: { base: "100vw", xl: "100%" },
+        },
+        contexts: {
+          project: {
+            sizes: {
+              wide: { width: { base: "100%" } },
+            },
+          },
+        },
+      });
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /Use "100vw" instead/);
+    assert.match(warnings[0], /sizes\.wide\.xl/);
+    assert.match(warnings[0], /contexts\.project\.sizes\.wide\.base/);
+  });
+
+  it("uses content-box gutter math for fixed and viewport widths", () => {
+    const vars = defineContainer({
+      sizes: {
+        default: { base: "56rem" },
+        wide: { base: "100vw" },
+      },
+    }).cssVariables;
+
+    assert.equal(
+      vars["--cntr-gutter-wide"],
+      "max(calc((var(--cntr-vw) - var(--cntr-width-wide) + var(--cntr-padding-total)) / 2), var(--cntr-padding))",
+    );
+  });
+
   it("measure classes use size width vars without rescoping --cntr-width", () => {
     const css = defineContainer({
       sizes: {
@@ -318,10 +363,16 @@ describe("defineContainer", () => {
     assert.match(theme, /--spacing-cntr-pad:\s*var\(--cntr-padding\)/);
     assert.match(theme, /--spacing-gutter:\s*var\(--cntr-gutter\)/);
     assert.match(theme, /--spacing-gutter-wide:\s*var\(--cntr-gutter-wide\)/);
-    assert.match(theme, /--spacing-gutter-narrow:\s*var\(--cntr-gutter-narrow\)/);
+    assert.match(
+      theme,
+      /--spacing-gutter-narrow:\s*var\(--cntr-gutter-narrow\)/,
+    );
     assert.match(theme, /--width-cntr:\s*var\(--cntr-width\)/);
     assert.match(theme, /--width-cntr-wide:\s*var\(--cntr-width-wide\)/);
-    assert.match(theme, /--max-width-cntr-narrow:\s*var\(--cntr-width-narrow\)/);
+    assert.match(
+      theme,
+      /--max-width-cntr-narrow:\s*var\(--cntr-width-narrow\)/,
+    );
 
     const combined = container.toCss({ theme: true });
     assert.match(combined, /\.cntr \{/);
@@ -343,18 +394,20 @@ describe("defineContainer", () => {
     const plugin = createContainerTailwindPlugin(container.config);
     const components: Record<string, Record<string, string>> = {};
     // Invoke the plugin handler the same way Tailwind does.
-    const handler = (plugin as { handler?: Function }).handler
-      ?? (plugin as { (): { handler: Function } })().handler;
+    const handler =
+      (plugin as { handler?: Function }).handler ??
+      (plugin as { (): { handler: Function } })().handler;
     // tailwindcss/plugin returns a function with handler + config
     const pluginFn = plugin as unknown as {
-      handler: (api: {
-        addBase: Function;
-        addComponents: Function;
-      }) => void;
+      handler: (api: { addBase: Function; addComponents: Function }) => void;
     };
     pluginFn.handler({
       addBase: () => {},
-      addComponents: (rules: Record<string, Record<string, string>> | Array<Record<string, Record<string, string>>>) => {
+      addComponents: (
+        rules:
+          | Record<string, Record<string, string>>
+          | Array<Record<string, Record<string, string>>>,
+      ) => {
         const list = Array.isArray(rules) ? rules : [rules];
         for (const group of list) {
           Object.assign(components, group);
@@ -366,10 +419,7 @@ describe("defineContainer", () => {
       "var(--cntr-width-wide)",
     );
     assert.equal(components[".cntr-wide"]?.["--cntr-width"], undefined);
-    assert.equal(
-      components[".cntr"]?.["max-width"],
-      "var(--cntr-width)",
-    );
+    assert.equal(components[".cntr"]?.["max-width"], "var(--cntr-width)");
   });
 
   it("writeContainerCss writes combined CSS to disk", () => {

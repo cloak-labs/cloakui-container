@@ -69,6 +69,35 @@ export const gutterVarName = (sizeName: string): string =>
 export const measureClassName = (sizeName: string): string =>
   sizeName === "default" ? "cntr" : `cntr-${sizeName}`;
 
+const warnForPercentageWidths = (options: DefineContainerOptions): void => {
+  const locations: string[] = [];
+
+  const collect = (
+    sizes: Record<string, ContainerSizeDef> | undefined,
+    prefix: string,
+  ): void => {
+    for (const [sizeName, def] of Object.entries(sizes ?? {})) {
+      const width = isSizeObject(def) ? def.width : def;
+      for (const [breakpoint, value] of Object.entries(width)) {
+        if (value?.trim() === "100%") {
+          locations.push(`${prefix}.${sizeName}.${breakpoint}`);
+        }
+      }
+    }
+  };
+
+  collect(options.sizes, "sizes");
+  for (const [contextName, context] of Object.entries(options.contexts ?? {})) {
+    collect(context.sizes, `contexts.${contextName}.sizes`);
+  }
+
+  if (locations.length) {
+    console.warn(
+      `[@cloakui/container] Container width "100%" is containing-block-relative and can produce incorrect gutters in nested layouts. Use "100vw" instead. Found at: ${locations.join(", ")}.`,
+    );
+  }
+};
+
 const collectConfigStepKeys = (
   sizes: ResolvedContainerConfig["sizes"],
   padding: ResponsiveLength,
@@ -136,6 +165,7 @@ export const resolveContainerConfig = (
 
   const stepKeys = collectConfigStepKeys(sizes, padding, options.contexts);
   assertStepsHaveBreakpoints(stepKeys, breakpoints);
+  warnForPercentageWidths(options);
 
   // Explicit order (e.g. from breakpointsFromScreens) wins; otherwise sort by min-width
   // so custom keys like `xmd` slot between `md` and `lg` automatically.
