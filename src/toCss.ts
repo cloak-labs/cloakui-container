@@ -22,7 +22,10 @@ export type ToCssOptions = {
   theme?: boolean;
 };
 
-const formatRule = (selector: string, decls: Record<string, string>): string => {
+const formatRule = (
+  selector: string,
+  decls: Record<string, string>,
+): string => {
   if (!Object.keys(decls).length) return "";
   return `${selector} {\n${cssVariablesObjectToString(decls)}\n}\n`;
 };

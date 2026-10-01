@@ -18,10 +18,7 @@ import type {
 export type ContainerInstance = {
   config: ResolvedContainerConfig;
   className: (size?: ContainerSizeName | string | null) => string;
-  width: (
-    size?: string | null,
-    breakpoint?: ContainerBreakpoint,
-  ) => string;
+  width: (size?: string | null, breakpoint?: ContainerBreakpoint) => string;
   paddingTotal: (breakpoint?: ContainerBreakpoint) => string;
   contentBoxWidth: (
     size?: string | null,
@@ -76,9 +73,7 @@ export const defineContainer = (
     return resolveAtBreakpoint(def.width, breakpoint, order);
   };
 
-  const paddingTotal = (
-    breakpoint: ContainerBreakpoint = "base",
-  ): string => {
+  const paddingTotal = (breakpoint: ContainerBreakpoint = "base"): string => {
     const pad = resolveAtBreakpoint(config.padding, breakpoint, order);
     return `calc(${pad} * 2)`;
   };

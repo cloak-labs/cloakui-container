@@ -25,26 +25,35 @@ export const alignClassName = (
 ): string =>
   sizeName === "default" ? `align-${side}` : `align-${side}-${sizeName}`;
 
-const nestGutterZero = (
-  measureSelectors: string[],
-  name: string,
-): string => {
+const nestGutterZero = (measureSelectors: string[], name: string): string => {
   const g = `gutter-${name}`;
   const hosts = measureSelectors.map((c) => `.${c}`);
   const hostList = hosts.join(",\n");
-  return `${hostList.split(",\n").map((h) => `${h} .pl-${g}`).join(",\n")},
+  return `${hostList
+    .split(",\n")
+    .map((h) => `${h} .pl-${g}`)
+    .join(",\n")},
 .pl-${g} .pl-${g} {
   padding-inline-start: 0;
 }
-${hostList.split(",\n").map((h) => `${h} .pr-${g}`).join(",\n")},
+${hostList
+  .split(",\n")
+  .map((h) => `${h} .pr-${g}`)
+  .join(",\n")},
 .pr-${g} .pr-${g} {
   padding-inline-end: 0;
 }
-${hostList.split(",\n").map((h) => `${h} .ml-${g}`).join(",\n")},
+${hostList
+  .split(",\n")
+  .map((h) => `${h} .ml-${g}`)
+  .join(",\n")},
 .ml-${g} .ml-${g} {
   margin-inline-start: 0;
 }
-${hostList.split(",\n").map((h) => `${h} .mr-${g}`).join(",\n")},
+${hostList
+  .split(",\n")
+  .map((h) => `${h} .mr-${g}`)
+  .join(",\n")},
 .mr-${g} .mr-${g} {
   margin-inline-end: 0;
 }

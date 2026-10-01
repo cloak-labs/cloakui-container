@@ -22,14 +22,14 @@ It is usually overkill for app chrome (dashboards, settings) where layout is mos
 
 ## Why bother
 
-| Pain | What this gives you |
-|------|---------------------|
-| Every section invents its own `max-width` | Named sizes reused as `.cntr`, `.cntr-wide`, and so on |
-| Padding differs from block to block | One padding ladder (`--cntr-padding`) shared by measure classes and `px-cntr-pad` |
-| Full-bleed / edge-aligned pieces do not line up | Gutters derived from width + padding (`px-gutter`, `px-gutter-wide`) |
-| Tweaking sitewide width means a repo-wide hunt | Change `defineContainer({ sizes })` once; CSS and JS both read it |
+| Pain                                                                     | What this gives you                                                                  |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Every section invents its own `max-width`                                | Named sizes reused as `.cntr`, `.cntr-wide`, and so on                               |
+| Padding differs from block to block                                      | One padding ladder (`--cntr-padding`) shared by measure classes and `px-cntr-pad`    |
+| Full-bleed / edge-aligned pieces do not line up                          | Gutters derived from width + padding (`px-gutter`, `px-gutter-wide`)                 |
+| Tweaking sitewide width means a repo-wide hunt                           | Change `defineContainer({ sizes })` once; CSS and JS both read it                    |
 | Handwriting image `sizes` that can easily go stale after a layout change | `container.contentBoxWidth("wide", "xl")` builds the expression from the same config |
-| Nested containers double-pad | Nest rules collapse inner padding when a measure sits inside another |
+| Nested containers double-pad                                             | Nest rules collapse inner padding when a measure sits inside another                 |
 
 ## Concepts (read this first)
 
@@ -40,8 +40,10 @@ Skim these once. The rest of the docs assume them.
 The content column: a centered block with a max width and horizontal padding. That is what most people mean by "the container."
 
 ```html
-<section class="cntr">…</section>        <!-- default measure -->
-<section class="cntr-wide">…</section>   <!-- wider measure -->
+<section class="cntr">…</section>
+<!-- default measure -->
+<section class="cntr-wide">…</section>
+<!-- wider measure -->
 ```
 
 ### Sizes
@@ -299,11 +301,11 @@ breakpoints: {
 
 If you omit `breakpointOrder`, steps are sorted by ascending min-width. Prefer `breakpointsFromScreens` when you care about matching Tailwind's screen key order.
 
-| Goal | How |
-|------|-----|
-| Change where a step fires | Set that key in `breakpoints` |
+| Goal                                  | How                                                         |
+| ------------------------------------- | ----------------------------------------------------------- |
+| Change where a step fires             | Set that key in `breakpoints`                               |
 | Add a custom step (for example `3xl`) | Put it in `breakpoints`, then use it in `sizes` / `padding` |
-| Match Tailwind screen order | Spread `breakpointsFromScreens(theme.screens)` |
+| Match Tailwind screen order           | Spread `breakpointsFromScreens(theme.screens)`              |
 
 ### Contexts
 
@@ -325,34 +327,34 @@ That matches `#root.project-page` (and any other selector you listed in `selecto
 
 ### Other knobs
 
-| Option | Default | Meaning |
-|--------|---------|---------|
-| `widthMode` | `"max"` | `"max"`: `width: 100%; max-width: var(--cntr-width)`. `"min"`: width is `min(measure, 100% - pad)`. |
-| `scrollbarCompensation` | off | When on, `--cntr-vw` subtracts scrollbar width and optional `sidebarWidth`. |
-| `selectors` | `:root`, `#root` | Where CSS variables are attached. |
+| Option                  | Default          | Meaning                                                                                             |
+| ----------------------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| `widthMode`             | `"max"`          | `"max"`: `width: 100%; max-width: var(--cntr-width)`. `"min"`: width is `min(measure, 100% - pad)`. |
+| `scrollbarCompensation` | off              | When on, `--cntr-vw` subtracts scrollbar width and optional `sidebarWidth`.                         |
+| `selectors`             | `:root`, `#root` | Where CSS variables are attached.                                                                   |
 
 ## Classes and tokens
 
 ### Classes
 
-| Class | Role |
-|-------|------|
-| `cntr` / `cntr-{name}` | Measure (centers, max-width, padding). Named sizes use `--cntr-width-{name}`; `--cntr-width` always stays the default measure. |
-| `cntr-full` | Full viewport width (padding opt-in via utilities; no nest pad reset) |
-| `align-start` / `align-end` / `align-*-{name}` | Flush a measure to a size's start/end edge (pair with `cntr` / `cntr-{name}`) |
-| `max-w-cntr` / `max-w-cntr-{name}` | Max-width only |
-| `px-cntr-pad`, `pl-cntr-pad`, … | Inner padding token |
-| `px-gutter`, `px-gutter-{name}`, … | Edge gutters |
+| Class                                          | Role                                                                                                                           |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `cntr` / `cntr-{name}`                         | Measure (centers, max-width, padding). Named sizes use `--cntr-width-{name}`; `--cntr-width` always stays the default measure. |
+| `cntr-full`                                    | Full viewport width (padding opt-in via utilities; no nest pad reset)                                                          |
+| `align-start` / `align-end` / `align-*-{name}` | Flush a measure to a size's start/end edge (pair with `cntr` / `cntr-{name}`)                                                  |
+| `max-w-cntr` / `max-w-cntr-{name}`             | Max-width only                                                                                                                 |
+| `px-cntr-pad`, `pl-cntr-pad`, …                | Inner padding token                                                                                                            |
+| `px-gutter`, `px-gutter-{name}`, …             | Edge gutters                                                                                                                   |
 
 Prefer `w-full px-cntr-pad` when you want full width with the shared pad token.
 
 ### Tailwind theme tokens (v3 plugin)
 
-| Token | Scale | Utilities |
-|-------|-------|-----------|
-| `cntr-pad` | spacing | `px-cntr-pad`, `right-cntr-pad`, … |
-| `gutter` / `gutter-{name}` | spacing | `px-gutter`, `px-gutter-wide`, … |
-| `cntr` / `cntr-{name}` | width / maxWidth | `w-cntr`, `max-w-cntr-wide`, … |
+| Token                      | Scale            | Utilities                          |
+| -------------------------- | ---------------- | ---------------------------------- |
+| `cntr-pad`                 | spacing          | `px-cntr-pad`, `right-cntr-pad`, … |
+| `gutter` / `gutter-{name}` | spacing          | `px-gutter`, `px-gutter-wide`, …   |
+| `cntr` / `cntr-{name}`     | width / maxWidth | `w-cntr`, `max-w-cntr-wide`, …     |
 
 `--cntr-vw` is the viewport reference gutters use (`100vw` by default). Do not use `100%` here — percentage resolves against the containing block of the element that applies the gutter (e.g. `padding-left`), which collapses edge gutters inside nested or measure-sized parents.
 
