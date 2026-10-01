@@ -27,8 +27,9 @@
     "dev": "tsc -p tsconfig.json -w --preserveWatchOutput",
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --import tsx --test src/defineContainer.test.ts",
-    "clean": "rm -rf .turbo && rm -rf dist && npm run clean:modules",
-    "clean:modules": "rm -rf node_modules"
+    "clean": "rm -rf .turbo && rm -rf dist",
+    "clean:modules": "rm -rf node_modules",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "repository": {
     "type": "git",
