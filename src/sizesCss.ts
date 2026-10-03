@@ -56,7 +56,6 @@ ${hostList
   .join(",\n")},
 .mr-${g} .mr-${g} {
   margin-inline-end: 0;
-}
 }`;
 };
 
